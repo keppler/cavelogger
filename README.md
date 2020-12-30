@@ -1,4 +1,4 @@
-## Introduction
+# CaveLogger
 
 (tbd)
 
@@ -81,12 +81,11 @@ INT0 (RTC INT1) PD2   4 |       | 25  PC2 OLED POWER
        Button_1 PB0  14 |_______| 15  PB1 Button_2
 ```
 
-## Literatur
-
-* [Hitzedraht-Anemometer](https://www.mikrocontroller.net/attachment/58437/ELV_Hitzdraht-Anemometer_3.._2_.pdf) (mit Schaltplan)
-* [Umbau Windrad von Reed auf Hallsensoren](https://www.arduinoforum.de/arduino-Thread-Anemometer-WH1080)
-
 ## Software
+
+### Flashing
+
+You need to flash the circuit with **3.3V** (the RFM95 will be killed with 5V). I recommend to [modify an USBASP](https://www.hackster.io/billy-cheung/3-3v-usbasp-modification-c20557) to work with 3.3V output.
 
 ### Libraries
 
@@ -100,3 +99,9 @@ All required libraries are included. The following adjustments have been made to
 
    -  defined all configuration settings in `lmic-config.h` (instead of `project_config/lmic_project_config.h`), disabling all features not required
    -  ported hardware driver (HAL) to AVR (`lmic-hal-avr.c`) to be independend of Arduino (a bit "quick&dirty", highly depending on current chipset and layout)
+
+## Literatur/Links (German)
+
+* [Das Klima der Schrattenhöhle](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/147894/eth-26985-01.pdf?sequence=1&isAllowed=y) - äußerst interessante wissenschaftliche Arbeit zur Klimamessung in Höhlen
+* [Hitzedraht-Anemometer](https://www.mikrocontroller.net/attachment/58437/ELV_Hitzdraht-Anemometer_3.._2_.pdf) (mit Schaltplan)
+* [Umbau Windrad von Reed auf Hallsensoren](https://www.arduinoforum.de/arduino-Thread-Anemometer-WH1080)
