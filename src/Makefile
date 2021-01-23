@@ -9,7 +9,8 @@
 # avrdude -c usbasp -p atmega328p -P usb -v -U lfuse:w:0x62:m -U hfuse:w:0xd1:m -U efuse:w:0xff:m -U flash:w:cavelogger.hex:i
 # avrdude -c usbasp -p atmega328p -P usb -v -U lfuse:w:0x62:m -U hfuse:w:0xd1:m -U efuse:w:0xff:m -U eeprom:w:cavelogger.eep:i
 
-CFLAGS = -Wall -Os -mmcu=atmega328p
+CFLAGS = -Wall -Os -mmcu=atmega328p -fdata-sections -ffunction-sections
+LDFLAGS = -Wl,--gc-sections
 CXXFLAGS = -Wall -Os -mmcu=atmega328p -std=c++11
 CPPFLAGS = -DARDUINO_LMIC_PROJECT_CONFIG_H=../../../src/lmic-config.h -DUSE_IDEETRON_AES -DPCB_V1_0
 
@@ -65,7 +66,7 @@ cavelogger.eep: cavelogger.elf
 	avr-size $@
 
 cavelogger.elf: .depend $(OBJECTS)
-	avr-gcc $(CFLAGS) -o $@ $(OBJECTS)
+	avr-gcc $(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS)
 
 clean:
 	rm -f $(OBJECTS) .depend cavelogger.elf cavelogger.hex
