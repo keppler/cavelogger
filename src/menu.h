@@ -10,6 +10,13 @@
 #ifndef __MENU_H
 #define __MENU_H
 
+#include <avr/eeprom.h>
+
+extern const unsigned char Logo[] EEMEM;
+extern const uint8_t NWKSKEY[] EEMEM;
+extern const uint8_t APPSKEY[] EEMEM;
+extern const uint32_t DEVADDR EEMEM;
+
 void menu_main();
 
 #endif /* !__MENU_H */
