@@ -102,7 +102,7 @@ All required libraries are included. The following adjustments have been made to
 
 3. [I2C Master Interface](http://www.peterfleury.epizy.com/avr-software.html) by Peter Fleury
 
-   Due to a bug in the PCB layout (see #1) we use the software I²C implementation. Next PCB version will use `twimaster.c` instead (with ATmega's hardware I²C interface).
+   We use the *software* driver (`i2cmaster.S`) because this allows a faster I²C clock speed than the hardware driver (because of our limited clock speed of 1MHz). Additionally, this enabled us to work around a bug in the PCB layout v1.0 (see issue #1), where SDA and SCL pins are swapped.
 
 ## Literatur/Links (German)
 

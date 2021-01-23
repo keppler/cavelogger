@@ -34,8 +34,11 @@
 
 /* I2C */
 #if defined(__AVR_ATmega328__) || defined(__AVR_ATmega328P__)
-/* use hardware TWI interface */
-#define I2C_HARDWARE
+/* use software TWI interface */
+#undef I2C_HARDWARE
+#define I2C_PORT		C
+#define I2C_SDA_PIN		4
+#define I2C_SCL_PIN		5
 #else
 #error UNKNOWN PLATFORM
 #endif
@@ -80,11 +83,10 @@
 
 /* PCB layout patches for 1.0 */
 #ifdef PCB_V1_0
-/* use software I2C interface */
-#undef I2C_HARDWARE
 /* use PC4 as SCL and PC5 as SDA due to layout bug */
-#define I2C_PORT		C
+#undef I2C_SDA_PIN
 #define I2C_SDA_PIN		5
+#undef I2C_SCL_PIN
 #define I2C_SCL_PIN		4
 #endif /* PCB_V1_0 */
 
