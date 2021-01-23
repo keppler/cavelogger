@@ -7,6 +7,7 @@
 
 #define __CONCAT2(x,y) x ## y
 #define __CONCAT3(x,y,z) x ## y ## z
+#define DD(port, pin) __CONCAT3(DD, port, pin)
 #define DDR(name) __CONCAT2(DDR, name)
 #define PORT(name) __CONCAT2(PORT, name)
 #define PORTIN(name) __CONCAT2(PIN, name)
@@ -65,9 +66,10 @@
 /* SD Card */
 #define SD_NSS_PORT		D
 #define SD_NSS_PIN		3
-// ###TODO### change from "power" to "card detected"! (GND to CD when card is inserted)
-#define SD_PWR_PORT		C
-#define SD_PWR_PIN		3
+// CD: Card Detected
+#define SD_CD_PORT		C
+#define SD_CD_PIN		3
+// INT: PCINT11 !
 
 /* Real Time Clock */
 #define RTC_NSS_PORT	D

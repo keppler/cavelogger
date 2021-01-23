@@ -18,5 +18,6 @@ extern const uint8_t APPSKEY[] EEMEM;
 extern const uint32_t DEVADDR EEMEM;
 
 void menu_main();
+void menu_sd_insert();
 
 #endif /* !__MENU_H */

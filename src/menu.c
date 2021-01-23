@@ -394,6 +394,33 @@ void menu_main() {
 }
 
 /* -------------------------------------------------------------------------
+ * SD card inserted
+ * ---------------------------------------------------------------------- */
+void menu_sd_insert() {
+
+	unsigned char line = 0;
+	SSD1306_writeString(0, line++, PSTR("-----SDCARD-----"), 1);
+	SSD1306_writeString(0, line++, PSTR("..."), 1);
+
+// show nr of data records
+// <copy> <exit>
+// maybe: <mount>?
+
+	inputButton=0;
+	while (1) {
+  		set_sleep_mode(SLEEP_MODE_IDLE);
+  		sleep_mode();
+
+		if (inputButton & 0x02) {
+			// Button 2
+			SSD1306_clear();
+			return;
+		}
+	}
+
+}
+
+/* -------------------------------------------------------------------------
  * show menu
  * ---------------------------------------------------------------------- */
 #if 0

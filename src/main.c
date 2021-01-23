@@ -73,6 +73,7 @@ uint16_t measPress;
 uint16_t measVCC;
 uint16_t measWind;
 time_t measTsFirst, measTsLast;
+uint32_t sdDetected = 0;
 
 /* interrupt handler for RTC */
 ISR(INT0_vect) {
@@ -91,6 +92,17 @@ ISR(PCINT0_vect) {
 		LED_blink();
 	}
 }
+
+/* interrupt handler for SD Card */
+ISR(PCINT1_vect) {
+#ifdef SD_CD_PORT
+	// if (!(PORTIN(SD_CD_PORT) & (1 << PORTPIN(SD_CD_PORT, SD_CD_PIN)))) {
+	if (!(PINC & (1 << PINC3))) {
+		sdDetected = 1;
+	}
+#endif /* SD_CD_PORT */
+}
+
 
 #ifdef ENABLE_RFM95
 static void parseRX(uint8_t *data, size_t dataLen) {
@@ -424,6 +436,17 @@ int main(void) {
 	PCICR |= (1 << PCIE0);						/* enable interrupts on PORTB */
 	PCMSK0 |= ((1 << PCINT0) | (1 << PCINT1));	/* allow int on PB0 */
 
+#ifdef SD_CD_PORT
+	// configure "card detected" port as INPUT
+	//DDR(SD_CD_PORT) &= ~(1 << DD(SD_CD_PORT, SD_CD_PIN));	/* configure SD_CD_PIN as INPUT */
+	//PORT(SD_CD_PORT) &= ~(1 << PORTPIN(SD_CD_PORT, SD_CD_PIN));	/* enable internal pull-up */
+	DDRC &= ~(1 << DDC3);		/* configure PB0 as INPUT */
+	PORTC |= (1 << PORTC3);		/* enable internal pull-up */
+	PCICR |= (1 << PCIE1);		/* enable interrupts on PORTC */
+	PCMSK1 |= (1 << PCINT11);	/* allow int on PB0 */
+#endif /* SD_CD_PORT */
+
+	/* INT0: used for real time clock! */
 	/* EICRA (External Interrupt Control Register A): enable INT0 */
 	/* Falling edge of INT0 will fire the ISR */
 	EICRA &= ~(1 << ISC00);
@@ -578,11 +601,27 @@ int main(void) {
 			//if (displayOff) SSD1306_off();
 		}
 
+#ifdef SD_CD_PORT
+		if (sdDetected == 1) {
+			LED_blink();
+			if (displayOff) {
+#ifdef OLED_PWR_PORT
+				PORT(OLED_PWR_PORT) |= (1 << PORTPIN(OLED_PWR_PORT, OLED_PWR_PIN));	/* power on */
+				SSD1306_init();
+#endif /* OLED_PWR_PORT */
+
+				if (!displayOff) {
+					SSD1306_clear();
+					SSD1306_on();
+				}
+			}
+			menu_sd_insert();
+			sdDetected = 0;
+		}
+#endif /* SD_CD_PORT */
+
 		if (!displayOff) SSD1306_off();
 
-#ifdef SD_PWR_PORT
-		PORT(SD_PWR_PORT) &= ~(1 << PORTPIN(SD_PWR_PORT, SD_PWR_PIN));	/* power off */
-#endif /* SD_PWR_PORT */
 #ifdef OLED_PWR_PORT
 		if (!displayOff) PORT(OLED_PWR_PORT) &= ~(1 << PORTPIN(OLED_PWR_PORT, OLED_PWR_PIN));	/* power off */
 #endif /* OLED_PWR_PORT */
