@@ -31,7 +31,9 @@
 
 
 #include <avr/io.h>
-#include "pins.h"
+#include "../../src/pins.h"
+
+#ifndef I2C_HARDWARE
 
 #undef SCL_PORT
 #undef SCL_DDR
@@ -320,3 +322,4 @@ i2c_put_ack_wait:
 	ret
 	.endfunc
 
+#endif /* !I2C_HARDWARE */

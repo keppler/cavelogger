@@ -100,6 +100,10 @@ All required libraries are included. The following adjustments have been made to
    -  defined all configuration settings in `lmic-config.h` (instead of `project_config/lmic_project_config.h`), disabling all features not required
    -  ported hardware driver (HAL) to AVR (`lmic-hal-avr.c`) to be independend of Arduino (a bit "quick&dirty", highly depending on current chipset and layout)
 
+3. [I2C Master Interface](http://www.peterfleury.epizy.com/avr-software.html) by Peter Fleury
+
+   Due to a bug in the PCB layout (see #1) we use the software I²C implementation. Next PCB version will use `twimaster.c` instead (with ATmega's hardware I²C interface).
+
 ## Literatur/Links (German)
 
 * [Das Klima der Schrattenhöhle](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/147894/eth-26985-01.pdf?sequence=1&isAllowed=y) - äußerst interessante wissenschaftliche Arbeit zur Klimamessung in Höhlen

@@ -11,7 +11,7 @@
 
 CFLAGS = -Wall -Os -mmcu=atmega328p
 CXXFLAGS = -Wall -Os -mmcu=atmega328p -std=c++11
-CPPFLAGS = -DARDUINO_LMIC_PROJECT_CONFIG_H=../../../src/lmic-config.h -DUSE_IDEETRON_AES -DPCB_PATCH_I2C
+CPPFLAGS = -DARDUINO_LMIC_PROJECT_CONFIG_H=../../../src/lmic-config.h -DUSE_IDEETRON_AES -DPCB_V1_0
 
 SOURCES_C = \
 		lmic-hal-avr.c \
@@ -21,6 +21,7 @@ SOURCES_C = \
 		../lib/arduino-lmic/lmic/oslmic.c \
 		../lib/arduino-lmic/aes/other.c \
 		../lib/arduino-lmic/lmic/radio.c \
+		../lib/i2cmaster/twimaster.c \
 		../lib/petitfat/diskio.c \
 		../lib/petitfat/pff.c \
 		AT45DB081E.c \
@@ -38,7 +39,7 @@ SOURCES_CPP = \
 		../lib/arduino-lmic/aes/ideetron/AES-128_V10.cpp
 
 SOURCES_ASM= \
-		i2cmaster.S
+		../lib/i2cmaster/i2cmaster.S
 
 OBJECTS = $(SOURCES_C:%.c=%.o) $(SOURCES_ASM:%.S=%.o) $(SOURCES_CPP:%.cpp=%.o)
 

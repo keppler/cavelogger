@@ -2,7 +2,7 @@
 #include <avr/eeprom.h>
 #include <avr/pgmspace.h>
 #include <stdint.h>
-#include "i2cmaster.h"
+#include "../lib/i2cmaster/i2cmaster.h"
 #include "SSD1306.h"
 
 #define I2CADDR			0x78
