@@ -4,7 +4,7 @@
 
 ## Data
 
-During measeurement, we collect the following data:
+During measurement, we collect the following data:
 
 Data | Size
 ---- | ----
@@ -39,9 +39,9 @@ The SD Card connector anyway remains. If a card insertion is detected (this is s
 
    ```format e: /FS:FAT32```
 
-2. Prepare an empty file called `CAVELOG.DAT` with a size of 2MB (data) + 128 Bytes (headers + spare) = 2.097.280 bytes. You find such a file in the repository, or create your own:
+2. Prepare an empty file called `CAVELOG.DAT` with a size of 1MB (data) + 128 Bytes (headers + spare) = 1.048.704 bytes. You find such a file in the repository, or create your own:
 
-   ```dd if=/dev/zero of=CAVELOG.DAT bs=2097280 count=1```
+   ```dd if=/dev/zero of=CAVELOG.DAT bs=1048704 count=1```
 
    Copy this file on the SD card.
 
