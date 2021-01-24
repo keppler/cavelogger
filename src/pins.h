@@ -55,9 +55,6 @@
 /* BMP280 */
 #define BMP280_NSS_PORT	C
 #define BMP280_NSS_PIN	0
-/* if defined, this pin will enable switching on/off the sensor */
-//#define BMP280_PWR_PORT	B
-//#define BMP280_PWR_PIN	0
 
 /* Debug LED */
 #define LED_PORT	C
