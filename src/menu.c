@@ -16,7 +16,10 @@
 #include <avr/pgmspace.h>
 #include "SSD1306.h"
 #include "RX6110.h"
-#include "LED.h"
+
+#ifdef FLASH_NSS_PORT
+#include "AT45DB081E.h"
+#endif /* FLASH_NSS_PORT */
 
 #ifdef ENABLE_RFM95
 #include "../lib/arduino-lmic/lmic/lmic.h"
@@ -79,23 +82,23 @@ static const char *sf2pstr(uint8_t sf) {
 }
 #endif /* ENABLE_RFM95 */
 
-void menu_erase_flash() {
-	uint8_t line = 0;
-	uint8_t _state = 0;
-	SSD1306_clear();
-	SSD1306_writeString(0, line, PSTR("==ERASE FLASH=="), 1);
+/* -------------------------------------------------------------------------
+ * Flash menu
+ * ---------------------------------------------------------------------- */
+void menu_flash() {
+	unsigned char line = 0;
+	unsigned char _state = 0;
+	SSD1306_writeString(0, line++, PSTR("-----FLASH------"), 1);
 
 UPDATE_MENU:
-	line=2;
-	SSD1306_writeString(0, line, PSTR("<ABORT>"), _state == 0 ? 3 : 1);
-	line++;
-	SSD1306_writeString(0, line, PSTR("<ERASE FLASH>"), _state == 1 ? 3 : 1);
+	line=3;
+	SSD1306_writeString(0, 3, PSTR("<EXIT>"), _state == 0 ? 3 : 1);
+	SSD1306_writeString(0, 4, PSTR("<RESET>"), _state == 1 ? 3 : 1);
 
-
-	uint8_t delayCount = 0;
-	inputButton = 0;
-	do {
-		_delay_ms(100);
+	inputButton=0;
+	while (1) {
+  		set_sleep_mode(SLEEP_MODE_IDLE);
+  		sleep_mode();
 
 		if (inputButton & 0x01) {
 			_state++;
@@ -104,24 +107,45 @@ UPDATE_MENU:
 		}
 
 		if (inputButton & 0x02) {
-			switch (_state) {
-				case 0:
-					/* abort */
-					return;
-				case 1:
-					/* ERASE FLASH */
-					SSD1306_writeString(0, 5, PSTR("ERASING FLASH..."), 1);
-					_delay_ms(1000);
-//					FLASH_erase();
-					_delay_ms(1000);
-					return;
-				default:
-					break;
-					// ignore...
+			// Button 2
+			if (_state == 0) {
+				SSD1306_clear();
+				return;
+			}
+			if (_state == 1) {
+				// reset flash
+				struct data_header hdr;
+				hdr.magic[0] = 'C';
+				hdr.magic[1] = 'L';
+				hdr.magic[2] = 'G';
+				hdr.version = 1;
+				hdr.nrec = 0;
+				// write to address 0:
+				//FLASH_write(0, sizeof(hdr), (uint8_t*)&hdr);
+				FLASH_writeBuffer(0, sizeof(hdr), (uint8_t*)&hdr);
+				FLASH_writePage(0);
+				flashBlock = 0;
+				flashRec = 0;
+				// read data (to verify)
+				hdr.magic[0] = 0x00;
+				hdr.magic[1] = 0x00;
+				hdr.magic[2] = 0x00;
+				hdr.version = 0;
+				hdr.nrec = 0xFF;
+				FLASH_read(0, sizeof(hdr), (uint8_t*)&hdr);
+				if (hdr.magic[0] == 'C' && hdr.magic[1] == 'L' && hdr.magic[2] == 'G' && hdr.version == 1 && hdr.nrec == 0) {
+					// compare ok
+					SSD1306_writeString(0, 6, PSTR("WRITE OK"), 1);
+				} else {
+					// comparison failed!
+					SSD1306_writeString(0, 6, PSTR("WRITE FAILED"), 1);
+				}
+				_delay_ms(2000);
+				SSD1306_writeString(0, 6, PSTR("            "), 1);
+				goto UPDATE_MENU;
 			}
 		}
-
-	} while (delayCount++ < 100);
+	}
 
 }
 
@@ -190,6 +214,10 @@ UPDATE_MENU:
 #endif /* ENABLE_RFM95 */
 
 			SSD1306_clear();
+			if (_state == 5) {
+				menu_flash();
+				return;
+			}
 			if (_state == 6) return;
 		}
 
@@ -313,7 +341,7 @@ UPDATE_MENU:
 			// Button 2
 			SSD1306_clear();
 			if (_state == 0) menu_setup();
-			if (_state == 2) menu_info();
+			if (_state == 2) return; //menu_info();
 			if (_state == 3) return;
 			goto AGAIN;
 		}
@@ -362,7 +390,13 @@ void menu_main() {
 
 	// humity? pressure? wind?
 
-	SSD1306_writeString(8, 7, PSTR("B1: MORE"), 1);
+	// flash buffer pos
+	SSD1306_writeString(8, line, "F", 0);
+	SSD1306_writeInt(9, line, flashBlock, 10);
+	SSD1306_writeString(13, line, "/", 0);
+	SSD1306_writeInt(14, line++, flashRec, 10);
+
+//	SSD1306_writeString(8, 7, PSTR("B1: MORE"), 1);
 
 	/* configure timer1 to automatically quit info display after timeout */
 	cli();
@@ -403,7 +437,7 @@ void menu_sd_insert() {
 	unsigned char line = 0;
 	unsigned char _state = 0;
 	SSD1306_writeString(0, line++, PSTR("-----SDCARD-----"), 1);
-	SSD1306_writeString(0, line++, PSTR("..."), 1);
+//	SSD1306_writeString(0, line++, PSTR("..."), 1);
 
 	// TODO: show nr of data records
 
@@ -413,6 +447,7 @@ UPDATE_MENU:
 	SSD1306_writeString(0, 4, PSTR("<EXIT>"), _state == 1 ? 3 : 1);
 
 	inputButton=0;
+	FRESULT fr;
 	while (1) {
   		set_sleep_mode(SLEEP_MODE_IDLE);
   		sleep_mode();
@@ -430,43 +465,38 @@ UPDATE_MENU:
 				SSD1306_writeString(0, 3, PSTR("MOUNT..."), 1);
 				SSD1306_writeString(0, 4, PSTR("      "), 1);
 				FATFS fs;
-				FRESULT fr;
 				fr = pf_mount(&fs);
 				if (fr != FR_OK) {
-					SSD1306_writeString(0, 4, PSTR("ERR:"), 1);
-					SSD1306_writeInt(5, 4, fr, 10);
-					_delay_ms(2000);
-					goto UPDATE_MENU;
+					goto PF_ERROR;
 				}
-				LED_blink();
 				// open file
 				SSD1306_writeString(0, 3, PSTR("OPEN... "), 1);
 				fr = pf_open("CAVELOG.DAT");
 				if (fr != FR_OK) {
-					SSD1306_writeString(0, 4, PSTR("ERR:"), 1);
-					SSD1306_writeInt(5, 4, fr, 10);
-					_delay_ms(2000);
-					goto UPDATE_MENU;
+					goto PF_ERROR;
 				}
-				LED_blink();
 				// write data
-				const char data[] = "Hello, World";
 				UINT wsz = 0;
-				fr = pf_write(data, sizeof(data), &wsz);
-				if (fr != FR_OK) {
-					SSD1306_writeString(0, 4, PSTR("ERR:"), 1);
-					SSD1306_writeInt(5, 4, fr, 10);
-					_delay_ms(2000);
-					goto UPDATE_MENU;
+				uint32_t i;
+				unsigned char buf[512];
+				for (i=0; i < flashBlock; i++) {
+					// read data from flash into memory
+					FLASH_read(i * 512, 256, buf);
+					FLASH_read((i * 512) + 256, 256, buf+256);
+					// write data from memory onto SD
+					fr = pf_write(buf, sizeof(buf), &wsz);
+					if (fr != FR_OK) goto PF_ERROR;
 				}
-				LED_blink();
-				SSD1306_writeInt(0, 3, wsz, 10);
-				SSD1306_writeString(8, 3, PSTR("BYTES"), 1);
+
+//				const char data[] = "Hello, World";
+//				fr = pf_write(data, sizeof(data), &wsz);
+//				SSD1306_writeInt(0, 3, wsz, 10);
+//				SSD1306_writeString(8, 3, PSTR("BYTES"), 1);
 				// commit write
 				pf_write(0, 0, &wsz);
 				SSD1306_writeString(0, 4, PSTR("DONE.   "), 1);
 				_delay_ms(3000);
-				SSD1306_writeString(0, 3, PSTR("             "), 1);
+//				SSD1306_writeString(0, 3, PSTR("             "), 1);
 				goto UPDATE_MENU;
 			}
 			if (_state == 1) {
@@ -474,6 +504,13 @@ UPDATE_MENU:
 				return;
 			}
 		}
+		continue;
+PF_ERROR:
+//		SSD1306_writeString(0, 4, PSTR("ERR:"), 1);
+//		SSD1306_writeInt(5, 4, fr, 10);
+		SSD1306_writeInt(14, 3, fr, 10);
+		_delay_ms(2000);
+		goto UPDATE_MENU;
 	}
 
 }

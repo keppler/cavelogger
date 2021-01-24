@@ -63,6 +63,7 @@ uint8_t cfgLoraOff = 0;
 #ifdef ENABLE_RFM95
 uint8_t cfgLoraSF = DR_SF11;
 #endif /* ENABLE_RFM95 */
+uint16_t cfgMeasIntv = 900;			/* measurement interval, in seconds */
 uint8_t displayOff = 0;
 uint8_t powerLoss = 0;
 uint16_t sendTS[5] = {0,0,0,0,0};	/* ring buffer of send timestamp, to calculate time */
@@ -74,6 +75,8 @@ uint16_t measVCC;
 uint16_t measWind;
 time_t measTsFirst, measTsLast;
 uint32_t sdDetected = 0;
+uint32_t flashBlock = 0;
+uint32_t flashRec = 0;
 
 /* interrupt handler for RTC */
 ISR(INT0_vect) {
@@ -228,27 +231,6 @@ void onEvent (ev_t ev) {
 }
 #endif /* ENABLE_RFM95 */
 
-#if 0
-static int nr_of_files_on_card(void) {
-	// https://github.com/spanceac/dariabox/blob/master/daria-box.c#L102
-	FRESULT res;
-	FILINFO fno;
-	DIR dir;
-	int count = 0;
-
-	res = pf_opendir(&dir, "/");
-	if (res == FR_OK) {
-		for (;;) {
-			res = pf_readdir(&dir, &fno);
-			if (res != FR_OK || fno.fname[0] == 0) break;
-			if (!(fno.fattrib & AM_DIR)) //if it's a file name and not a dir
-				count ++;
-		}
-	}
-	return count;
-}
-#endif
-
 int main(void) {
 	uint8_t line;
 
@@ -275,10 +257,8 @@ int main(void) {
 	/* SD card */
 	DDR(SD_NSS_PORT) |= (1 << PORTPIN(SD_NSS_PORT, SD_NSS_PIN));
 	PORT(SD_NSS_PORT) |= (1 << PORTPIN(SD_NSS_PORT, SD_NSS_PIN));	/* set NSS HIGH */
-	//DDRC &= ~(1 << DDC3);		/* configure PC3 as INPUT */
-	//PORTC |= (1 << PORTC3);		/* enable internal pull-up */
 	DDR(SD_CD_PORT) &= ~(1 << PORTPIN(SD_CD_PORT, SD_CD_PIN));		/* configure PC3 as INPUT */
-	PORT(SD_CD_PORT) |= (1 << PORTPIN(SD_CD_PORT, SD_CD_PIN));	/* enable internal pull-up */
+	PORT(SD_CD_PORT) |= (1 << PORTPIN(SD_CD_PORT, SD_CD_PIN));		/* enable internal pull-up */
 
 #ifdef OLED_PWR_PORT
 	DDR(OLED_PWR_PORT) |= (1 << PORTPIN(OLED_PWR_PORT, OLED_PWR_PIN));
@@ -324,26 +304,22 @@ int main(void) {
 		SSD1306_writeString(13, 7, ":", 0);
 		SSD1306_writeInt(14, 7, ts.ts_sec, 10);
 		/* wake up again in 15 minutes for next measurement */
-		RTC_setTimer(900);
+		RTC_setTimer(cfgMeasIntv);
 	}
 
 	_delay_ms(4000);
 
 	SSD1306_clear();
 	line=0;
-	SSD1306_writeString(0, line++, PSTR("BOOTING..."), 1);
 
 	Wind_init();
-	SSD1306_writeString(0, line, PSTR("BMP280:"), 1);
+	SSD1306_writeString(0, line, PSTR("BMP280"), 1);
 #ifdef ENABLE_BMP280
 	if (BMP280_init() == BMP280_TYPE_UNKNOWN) {
 		SSD1306_writeString(8, line++, PSTR("ERROR!"), 1);
 		while(1) LED_blink();
 	}
-#ifdef BMP280_PWR_PORT
-	BMP280_off();
-#endif /* BMP280_PWR_PORT */
-	SSD1306_writeString(8, line++, PSTR("OK."), 1);
+//	SSD1306_writeString(8, line++, PSTR("OK."), 1);
 #else
 	SSD1306_writeString(8, line++, PSTR("DISABLED"), 1);
 #endif /* !ENABLE_BMP280 */
@@ -354,30 +330,37 @@ int main(void) {
 		SSD1306_writeString(8, line++, PSTR("ERROR!"), 1);
 		while(1) LED_blink();
 	}
-	SSD1306_writeString(8, line++, PSTR("OK."), 1);
+	/* get flash block pos */
+	{
+		struct data_header hdr;
+		uint8_t flashErr = 0;
+		while (1) {
+			FLASH_read((flashBlock * 512), sizeof(hdr), (uint8_t*)&hdr);
+			if (hdr.magic[0] != 'C' || hdr.magic[1] != 'L' || hdr.magic[2] != 'G') {
+				if (flashBlock == 0) flashErr = 1;
+				break;
+			}
+			flashRec = hdr.nrec;
+			if (flashRec < 38) break;
+			flashBlock++;
+		}
+		if (flashErr) {
+			SSD1306_writeString(8, line++, PSTR("NO-INIT"), 1);
+		} else {
+			SSD1306_writeInt(8, line, flashBlock, 10);
+			SSD1306_writeString(12, line, "/", 0);
+			SSD1306_writeInt(13, line++, flashRec, 10);
+		}
+	}
 
 	// send flash to sleep mode...
 	FLASH_enter_sleep();
 
 #endif /* FLASH_NSS_PORT */
 
-#if 0
-	/* SD Card */
-	FATFS FatFs;
-	if ((u = pf_mount(&FatFs)) != FR_OK) {
-		/* error while mounting SD card */
-		SSD1306_writeString(0, 0, "SD ERROR:", 0);
-		SSD1306_writeInt(10, 0, u, 10);
-		while(1) LED_blink();
-	}
-	SSD1306_writeString(0, 0, "SD OK", 0);
-	_delay_ms(1000);
-	SSD1306_writeString(0, 0, "FILES", 0);
-	SSD1306_writeInt(0, 1, nr_of_files_on_card(), 10);
-	_delay_ms(1000);
-	SSD1306_writeString(0, 0, "     ", 0);
-	SSD1306_writeString(0, 1, "     ", 0);
-#endif
+	// RTC interrupt
+	DDRD &= ~(1 << DDD2);	/* configure PD2 (INT0) as INPUT */
+	PORTD |= (1 << PORTD2);	/* enable internal pull-up */
 
 	/* LMIC */
 	SSD1306_writeString(0, line, PSTR("RFM95:"), 1);
@@ -430,10 +413,7 @@ int main(void) {
 	// Set data rate and transmit power for uplink
 	LMIC_setDrTxpow(cfgLoraSF, 14);
 
-	DDRD &= ~(1 << DDD2);	/* configure PD2 (INT0) as INPUT */
-	PORTD |= (1 << PORTD2);	/* enable internal pull-up */
-
-	SSD1306_writeString(8, line++, PSTR("OK."), 1);
+//	SSD1306_writeString(8, line++, PSTR("OK."), 1);
 #endif /* ENABLE_RFM95 */
 
 	/* configure buttons */
@@ -494,17 +474,11 @@ int main(void) {
 			}
 
 #ifdef ENABLE_BMP280
-#ifdef BMP280_PWR_PORT
-			BMP280_on();
-#endif /* BMP280_PWR_PORT */
-			if (!displayOff) SSD1306_writeString(7, 0, "?", 0);
+//			if (!displayOff) SSD1306_writeString(7, 0, "?", 0);
 			measTemp = BMP280_temp();
 			measHum = ((BME280_humidity() >> 6) * 10) >> 4;;
 			//uint8_t hum = BME280_humidity() >> 10;
 			measPress = BMP280_pressure() / 10;
-#ifdef BMP280_PWR_PORT
-			BMP280_off();
-#endif /* BMP280_PWR_PORT */
 #else /* !ENABLE_BMP280 */
 			measTemp = 0;
 			measHum = 0;
@@ -517,11 +491,11 @@ int main(void) {
 				SSD1306_writeInt(7, 2, (int32_t)measHum, 10);
 			}
 
-			if (!displayOff) SSD1306_writeString(7, 3, "?", 0);
+//			if (!displayOff) SSD1306_writeString(7, 3, "?", 0);
 			measVCC = VCC_get();
 			if (!displayOff) SSD1306_writeInt(7, 3, measVCC, 10);
 
-			if (!displayOff) SSD1306_writeString(7, 4, "?", 0);
+//			if (!displayOff) SSD1306_writeString(7, 4, "?", 0);
 			struct RTC_ts ts;
 			RTC_get(&ts);
 			if (!displayOff) {
@@ -532,7 +506,7 @@ int main(void) {
 				SSD1306_writeInt(13, 4, ts.ts_sec, 10);
 			}
 
-			if (!displayOff) SSD1306_writeString(7, 5, "?", 0);
+//			if (!displayOff) SSD1306_writeString(7, 5, "?", 0);
 			measWind = Wind_get();
 			if (!displayOff) {
 				SSD1306_writeInt(7, 5, measWind, 10);
@@ -545,6 +519,49 @@ int main(void) {
 #endif /* ENABLE_RFM95 */
 
 			measTemp /= 10;
+
+			// save data to flash
+			{
+				// load page into flash SRAM
+				FLASH_loadPage(flashBlock * 512);
+				struct data_header hdr;
+				hdr.magic[0] = 'C';
+				hdr.magic[1] = 'L';
+				hdr.magic[2] = 'G';
+				hdr.version = 1;
+				hdr.nrec = flashRec + 1;
+				//FLASH_write(flashBlock * 512, sizeof(hdr), (uint8_t*)&hdr);
+				FLASH_writeBuffer(0, sizeof(hdr), (uint8_t*)&hdr);
+
+				if (flashRec > 18) {
+					// save this page
+					FLASH_writePage(flashBlock * 512);
+					// load next page
+					FLASH_loadPage((flashBlock * 512) + 256);
+				}
+
+				struct data_record data;
+				data.ts = measTsLast;
+				data.temp = measTemp;
+				data.pressure = measPress;
+				data.humidity = measHum;
+				data.voltage = measVCC;
+				data.wind = measWind;
+				//FLASH_write((flashBlock * 512) + 9 + (flashRec * 13), sizeof(data), (uint8_t*)&data);
+				if (flashRec > 18) {
+					FLASH_writeBuffer((flashRec-19) * 13, sizeof(data), (uint8_t*)&data);
+					FLASH_writePage((flashBlock * 512) + 256);
+				} else {
+					FLASH_writeBuffer(9 + (flashRec * 13), sizeof(data), (uint8_t*)&data);
+					FLASH_writePage(flashBlock * 512);
+				}
+
+				flashRec++;
+				if (flashRec == 38) {
+					flashRec = 0;
+					flashBlock++;
+				}
+			}
 
 #ifdef ENABLE_RFM95
 			Data[0] = 0x01;	// header (payload format)
@@ -577,8 +594,8 @@ int main(void) {
 				LED_blink();
 
 				if (LMIC.seqnoUp == 3) {
-					/* increase wait time to 15min after 3rd frame */
-					RTC_setTimer(900);
+					/* increase wait time to 'cfgMeasIntv' (default: 15min) after 3rd frame */
+					RTC_setTimer(cfgMeasIntv);
 				}
 
 				if (LMIC.seqnoUp < 3) {
