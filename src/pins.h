@@ -65,7 +65,7 @@
 
 /* SD Card */
 #define SD_NSS_PORT		D
-#define SD_NSS_PIN		3
+#define SD_NSS_PIN		0
 // CD: Card Detected
 #define SD_CD_PORT		C
 #define SD_CD_PIN		3
