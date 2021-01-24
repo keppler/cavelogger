@@ -33,6 +33,26 @@ The capacity of this flash memory is 8 MBit = 1 MB, so we can save data for more
 
 The SD Card connector anyway remains. If a card insertion is detected (this is signalled by connecting a pin on the connector to GND), we run a function to mount that SD card and copy the contents of the flash memory to the SD card. An "empty" connector doesn't use any power.
 
+### SD Card Usage
+
+1. Format a MicroSD card with FAT32 filesystem. Other filesystems (FAT16, VFAT, ...) will *not* work. Under Windows, use the `format` utility on the shell to explicitly choose the filesystem type:
+
+   ```format e: /FS:FAT32```
+
+2. Prepare an empty file called `CAVELOG.DAT` with a size of 2MB (data) + 128 Bytes (headers + spare) = 2.097.280 bytes. You find such a file in the repository, or create your own:
+
+   ```dd if=/dev/zero of=CAVELOG.DAT bs=2097280 count=1```
+
+   Copy this file on the SD card.
+
+3. Insert MicroSD into SD slot. CaveLogger will detect the card, wake up and present a menu. Select `<COPY>` to copy data from flash memory on SD card.
+
+4. When copied successfully, leave the menu by selecting `<EXIT>`.
+
+### Parsing the data
+
+*(to be done...)*
+
 ## Battery lifetime
 
 The circuit uses around 1.5μA during idle time. The duty cycle draws around 5mA for around 5 seconds. Most power is drawn when sending data via LoRaWAN, we estimate 20mA for 1 second (###TODO###).

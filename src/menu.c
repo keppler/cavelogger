@@ -16,10 +16,13 @@
 #include <avr/pgmspace.h>
 #include "SSD1306.h"
 #include "RX6110.h"
+#include "LED.h"
 
 #ifdef ENABLE_RFM95
 #include "../lib/arduino-lmic/lmic/lmic.h"
 #endif /* ENABLE_RFM95 */
+
+#include "../lib/petitfat/pff.h"
 
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
@@ -397,113 +400,80 @@ void menu_main() {
  * SD card inserted
  * ---------------------------------------------------------------------- */
 void menu_sd_insert() {
-
 	unsigned char line = 0;
+	unsigned char _state = 0;
 	SSD1306_writeString(0, line++, PSTR("-----SDCARD-----"), 1);
 	SSD1306_writeString(0, line++, PSTR("..."), 1);
 
-// show nr of data records
-// <copy> <exit>
-// maybe: <mount>?
+	// TODO: show nr of data records
+
+UPDATE_MENU:
+	line=3;
+	SSD1306_writeString(0, 3, PSTR("<COPY>"), _state == 0 ? 3 : 1);
+	SSD1306_writeString(0, 4, PSTR("<EXIT>"), _state == 1 ? 3 : 1);
 
 	inputButton=0;
 	while (1) {
   		set_sleep_mode(SLEEP_MODE_IDLE);
   		sleep_mode();
 
-		if (inputButton & 0x02) {
-			// Button 2
-			SSD1306_clear();
-			return;
-		}
-	}
-
-}
-
-/* -------------------------------------------------------------------------
- * show menu
- * ---------------------------------------------------------------------- */
-#if 0
-void OLD_menu_main() {
-	uint8_t line;
-	uint8_t _state = 0;
-SHOW_MENU:
-	line = 0;
-	SSD1306_clear();
-	SSD1306_writeString(0, line, PSTR("==MENU=="), 1);
-//	menu_init();
-
-UPDATE_MENU:
-//	showMenu(menuData, 2, 5, 0);
-
-	line=2;
-	SSD1306_writeString(0, line, PSTR("LORA:"), 1);
-	SSD1306_writeString(5, line, cfgLoraOff ? PSTR("<OFF>") : PSTR("<ON> "), _state == 0 ? 3 : 1);
-	line++;
-	SSD1306_writeString(5, line, sf2pstr(cfgLoraSF), _state == 1 ? 3 : 1);
-	SSD1306_writeString(10, line, PSTR("<TEST>"), _state == 2 ? 3 : 1);
-	line++;
-	SSD1306_writeString(0, line, PSTR("<STATUS>"), _state == 3 ? 3 : 1);
-	line++;
-	SSD1306_writeString(0, line, PSTR("<ERASE FLASH>"), _state == 4 ? 3 : 1);
-	line++;
-	SSD1306_writeString(0, line, PSTR("<EXIT>"), _state == 5 ? 3 : 1);
-
-
-	uint8_t delayCount = 0;
-	inputButton = 0;
-	do {
-		_delay_ms(100);
-
 		if (inputButton & 0x01) {
 			_state++;
-			if (cfgLoraOff && (_state == 1 || _state == 2)) _state=3;
-			if (_state == 6) _state = 0;
+			if (_state == 2) _state = 0;
 			goto UPDATE_MENU;
 		}
 
 		if (inputButton & 0x02) {
-			switch (_state) {
-				case 0:
-					cfgLoraOff ^= 0x01;
+			// Button 2
+			if (_state == 0) {
+				// copy data...
+				SSD1306_writeString(0, 3, PSTR("MOUNT..."), 1);
+				SSD1306_writeString(0, 4, PSTR("      "), 1);
+				FATFS fs;
+				FRESULT fr;
+				fr = pf_mount(&fs);
+				if (fr != FR_OK) {
+					SSD1306_writeString(0, 4, PSTR("ERR:"), 1);
+					SSD1306_writeInt(5, 4, fr, 10);
+					_delay_ms(2000);
 					goto UPDATE_MENU;
-				case 1:
-					/* cycle SF */
-					switch (cfgLoraSF) {
-						case DR_SF7: cfgLoraSF = DR_SF8; break;
-						case DR_SF8: cfgLoraSF = DR_SF9; break;
-						case DR_SF9: cfgLoraSF = DR_SF10; break;
-						case DR_SF10: cfgLoraSF = DR_SF11; break;
-						case DR_SF11: cfgLoraSF = DR_SF12; break;
-						case DR_SF12: cfgLoraSF = DR_SF7; break;
-						default: cfgLoraSF = DR_SF7;
-					}
-					/* Set data rate and transmit power for uplink */
-					LMIC_setDrTxpow(cfgLoraSF, 14);
+				}
+				LED_blink();
+				// open file
+				SSD1306_writeString(0, 3, PSTR("OPEN... "), 1);
+				fr = pf_open("CAVELOG.DAT");
+				if (fr != FR_OK) {
+					SSD1306_writeString(0, 4, PSTR("ERR:"), 1);
+					SSD1306_writeInt(5, 4, fr, 10);
+					_delay_ms(2000);
 					goto UPDATE_MENU;
-				case 2:
-					// LoRa test!
-					//menu_status();
-					goto SHOW_MENU;
-				case 3:
-					// show status
-					menu_status();
-					goto SHOW_MENU;
-				case 4:
-					// erase flash menu
-					menu_erase_flash();
-					goto SHOW_MENU;
-				case 5:
-					// leave menu
-					return;
-				default:
-					break;
-					// ignore...
+				}
+				LED_blink();
+				// write data
+				const char data[] = "Hello, World";
+				UINT wsz = 0;
+				fr = pf_write(data, sizeof(data), &wsz);
+				if (fr != FR_OK) {
+					SSD1306_writeString(0, 4, PSTR("ERR:"), 1);
+					SSD1306_writeInt(5, 4, fr, 10);
+					_delay_ms(2000);
+					goto UPDATE_MENU;
+				}
+				LED_blink();
+				SSD1306_writeInt(0, 3, wsz, 10);
+				SSD1306_writeString(8, 3, PSTR("BYTES"), 1);
+				// commit write
+				pf_write(0, 0, &wsz);
+				SSD1306_writeString(0, 4, PSTR("DONE.   "), 1);
+				_delay_ms(3000);
+				SSD1306_writeString(0, 3, PSTR("             "), 1);
+				goto UPDATE_MENU;
+			}
+			if (_state == 1) {
+				SSD1306_clear();
+				return;
 			}
 		}
+	}
 
-	} while (delayCount++ < 100);
-
-	// return to main (sleep)
 }
-#endif
