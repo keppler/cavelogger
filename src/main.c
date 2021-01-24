@@ -263,18 +263,22 @@ int main(void) {
 	 * Initialize all CS lines before accessing *any* device on the SPI bus! */
 	SPI_init();
 	RTC_setup();
+
+#ifdef ENABLE_BMP280
 	BMP280_setup();
+#endif /* ENABLE_BMP280 */
+
 #ifdef FLASH_NSS_PORT
 	FLASH_setup();
 #endif /* FLASH_NSS_PORT */
-#if 0
+
+	/* SD card */
 	DDR(SD_NSS_PORT) |= (1 << PORTPIN(SD_NSS_PORT, SD_NSS_PIN));
 	PORT(SD_NSS_PORT) |= (1 << PORTPIN(SD_NSS_PORT, SD_NSS_PIN));	/* set NSS HIGH */
-#ifdef SD_PWR_PORT
-	DDR(SD_PWR_PORT) |= (1 << PORTPIN(SD_PWR_PORT, SD_PWR_PIN));
-	PORT(SD_PWR_PORT) |= (1 << PORTPIN(SD_PWR_PORT, SD_PWR_PIN));	/* power on */
-#endif /* SD_PWR_PORT */
-#endif
+	//DDRC &= ~(1 << DDC3);		/* configure PC3 as INPUT */
+	//PORTC |= (1 << PORTC3);		/* enable internal pull-up */
+	DDR(SD_CD_PORT) &= ~(1 << PORTPIN(SD_CD_PORT, SD_CD_PIN));		/* configure PC3 as INPUT */
+	PORT(SD_CD_PORT) |= (1 << PORTPIN(SD_CD_PORT, SD_CD_PIN));	/* enable internal pull-up */
 
 #ifdef OLED_PWR_PORT
 	DDR(OLED_PWR_PORT) |= (1 << PORTPIN(OLED_PWR_PORT, OLED_PWR_PIN));
@@ -331,6 +335,7 @@ int main(void) {
 
 	Wind_init();
 	SSD1306_writeString(0, line, PSTR("BMP280:"), 1);
+#ifdef ENABLE_BMP280
 	if (BMP280_init() == BMP280_TYPE_UNKNOWN) {
 		SSD1306_writeString(8, line++, PSTR("ERROR!"), 1);
 		while(1) LED_blink();
@@ -339,6 +344,9 @@ int main(void) {
 	BMP280_off();
 #endif /* BMP280_PWR_PORT */
 	SSD1306_writeString(8, line++, PSTR("OK."), 1);
+#else
+	SSD1306_writeString(8, line++, PSTR("DISABLED"), 1);
+#endif /* !ENABLE_BMP280 */
 
 #ifdef FLASH_NSS_PORT
 	SSD1306_writeString(0, line, PSTR("FLASH:"), 1);
@@ -440,8 +448,6 @@ int main(void) {
 	// configure "card detected" port as INPUT
 	//DDR(SD_CD_PORT) &= ~(1 << DD(SD_CD_PORT, SD_CD_PIN));	/* configure SD_CD_PIN as INPUT */
 	//PORT(SD_CD_PORT) &= ~(1 << PORTPIN(SD_CD_PORT, SD_CD_PIN));	/* enable internal pull-up */
-	DDRC &= ~(1 << DDC3);		/* configure PB0 as INPUT */
-	PORTC |= (1 << PORTC3);		/* enable internal pull-up */
 	PCICR |= (1 << PCIE1);		/* enable interrupts on PORTC */
 	PCMSK1 |= (1 << PCINT11);	/* allow int on PB0 */
 #endif /* SD_CD_PORT */
@@ -487,6 +493,7 @@ int main(void) {
 				SSD1306_writeString(0, 5, PSTR("WIND:"), 1);
 			}
 
+#ifdef ENABLE_BMP280
 #ifdef BMP280_PWR_PORT
 			BMP280_on();
 #endif /* BMP280_PWR_PORT */
@@ -498,6 +505,11 @@ int main(void) {
 #ifdef BMP280_PWR_PORT
 			BMP280_off();
 #endif /* BMP280_PWR_PORT */
+#else /* !ENABLE_BMP280 */
+			measTemp = 0;
+			measHum = 0;
+			measPress = 0;
+#endif /* !ENABLE_BMP280 */
 
 			if (!displayOff) {
 				SSD1306_writeInt(7, 0, measTemp, 10);

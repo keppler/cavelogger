@@ -13,7 +13,8 @@
 #include <stdint.h>
 #include <time.h>
 
-#define ENABLE_RFM95
+//#define ENABLE_RFM95
+//#define ENABLE_BMP280
 
 #define CL_VERSION "1.5"
 #define CL_DATE "01/2021"
