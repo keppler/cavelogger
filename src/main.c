@@ -47,13 +47,9 @@
 #include "../lib/arduino-lmic/lmic/hal.h"
 #endif /* ENABLE_RFM95 */
 
-//const uint8_t EEMEM NWKSKEY[16] = { 0 };
-//const uint8_t EEMEM APPSKEY[16] = { 0 };
-//const uint32_t EEMEM DEVADDR = 0x0;
-const uint8_t NWKSKEY[16] EEMEM = { 0x69, 0x2D, 0x85, 0x41, 0x11, 0xFC, 0x15, 0xF5, 0x1B, 0xF6, 0x35, 0xFC, 0xF9, 0xF5, 0xE2, 0x60 };
-const uint8_t APPSKEY[16] EEMEM = { 0x48, 0xB5, 0x6A, 0x05, 0x45, 0x1D, 0xF4, 0x2D, 0x1D, 0x1B, 0xFC, 0x4B, 0x8D, 0xDA, 0xFA, 0x82 };
-const uint32_t DEVADDR EEMEM = 0x2601110B;
-
+const uint8_t EEMEM NWKSKEY[16] = { 0 };
+const uint8_t EEMEM APPSKEY[16] = { 0 };
+const uint32_t EEMEM DEVADDR = 0x0;
 
 uint16_t int0Count = 0;
 static volatile uint8_t _lmic_done;
@@ -289,6 +285,7 @@ int main(void) {
 		SSD1306_writeString(8, 7, PSTR("RTC FAIL"), 1);
 		while(1) LED_blink();
 	}
+	powerLoss = RTC_powerLoss();
 	if (powerLoss) {
 		SSD1306_writeString(8, 7, "PWR LOST", 0);
 		RTC_reset();
@@ -411,7 +408,7 @@ int main(void) {
 	LMIC.dn2Dr = DR_SF9;
 
 	// Set data rate and transmit power for uplink
-	LMIC_setDrTxpow(cfgLoraSF, 14);
+	LMIC_setDrTxpow(cfgLoraSF, 20);
 
 //	SSD1306_writeString(8, line++, PSTR("OK."), 1);
 #endif /* ENABLE_RFM95 */
