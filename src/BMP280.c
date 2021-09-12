@@ -4,8 +4,6 @@
 #include "SPI.h"
 #include "BMP280.h"
 
-#include "LED.h"
-
 #ifndef BMP280_NSS_PORT
 #error BMP280_NSS_PORT not defined. Please edit 'pins.h' accordingly.
 #endif
@@ -168,7 +166,7 @@ static uint8_t _BMP280_read(uint8_t addr) {
 	return(data);
 }
 
-void BMP280_setup() {
+void BMP280_setup(void) {
 	/* configure OUTPUT pins */
 	_BMP280_NSS_DDR |= (1 << _BMP280_NSS_PORTPIN);
 	_BMP280_NSS_PORT |= (1 << _BMP280_NSS_PORTPIN);	/* set NSS HIGH */
@@ -179,7 +177,7 @@ void BMP280_setup() {
 #endif /* BMP280_PWR_PORT */
 }
 
-enum BMP280_TYPE_T BMP280_init() {
+enum BMP280_TYPE_T BMP280_init(void) {
 	uint8_t lsb, msb;
 
 	/* As per the datasheet, startup time is 2 ms. */
@@ -272,7 +270,7 @@ enum BMP280_TYPE_T BMP280_init() {
 
 }
 
-int32_t BMP280_temp() {
+int32_t BMP280_temp(void) {
 	uint8_t u;
 
 	if (_chip_type == BMP280_TYPE_BME280) {
@@ -306,7 +304,7 @@ int32_t BMP280_temp() {
 	return((t_fine * 5 + 128) >> 8);
 }
 
-uint32_t BMP280_pressure() {
+uint32_t BMP280_pressure(void) {
 	uint8_t press_msb	= _BMP280_read(BMP280_PRES_MSB_ADDR);
 	uint8_t press_lsb	= _BMP280_read(BMP280_PRES_LSB_ADDR);
 	uint8_t press_xlsb	= _BMP280_read(BMP280_PRES_XLSB_ADDR);
@@ -339,7 +337,7 @@ uint32_t BMP280_pressure() {
 	return(comp_pres);
 }
 
-uint32_t BME280_humidity() {
+uint32_t BME280_humidity(void) {
 
 	if (_chip_type != BMP280_TYPE_BME280) return(-1);
 
@@ -368,7 +366,7 @@ uint32_t BME280_humidity() {
 
 
 #ifdef BMP280_PWR_PORT
-void BMP280_on() {
+void BMP280_on(void) {
 	/* power-on */
 	_BMP280_NSS_PORT |= (1 << _BMP280_NSS_PORTPIN);	/* set NSS HIGH */
 	_BMP280_PWR_PORT |= (1 << _BMP280_PWR_PORTPIN);	/* set PWR HIGH */
@@ -387,7 +385,7 @@ void BMP280_on() {
 
 }
 
-void BMP280_off() {
+void BMP280_off(void) {
 	/* just power-off */
 	_BMP280_NSS_PORT &= ~(1 << _BMP280_NSS_PORTPIN);	/* set NSS HIGH */
 	_BMP280_PWR_PORT &= ~(1 << _BMP280_PWR_PORTPIN);	/* set PWR LOW */	

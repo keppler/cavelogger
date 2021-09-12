@@ -5,23 +5,23 @@
 
 #ifdef LED_PORT
 
-void LED_init() {
+void LED_init(void) {
 	DDR(LED_PORT) |= (1 << PORTPIN(LED_PORT, LED_PIN));
 	PORT(LED_PORT) &= ~(1 << PORTPIN(LED_PORT, LED_PIN));
 }
 
-void LED_blink() {
+void LED_blink(void) {
 	LED_on();
 	_delay_ms(100);
 	LED_off();
 	_delay_ms(100);
 }
 
-void LED_on() {
+void LED_on(void) {
 	PORT(LED_PORT) |= (1 << PORTPIN(LED_PORT, LED_PIN));  // LED on
 }
 
-void LED_off() {
+void LED_off(void) {
 	PORT(LED_PORT) &= ~(1 << PORTPIN(LED_PORT, LED_PIN)); // LED off
 }
 

@@ -15,9 +15,9 @@ struct RTC_ts {
 };
 
 void RTC_get(struct RTC_ts *ts);
-void RTC_reset();
+void RTC_reset(void);
 void RTC_setTimer(uint16_t interval);
 void RTC_set(const struct RTC_ts *ts);
-uint8_t RTC_powerLoss();
+uint8_t RTC_powerLoss(void);
 
 #endif /* !__RX6110_H */

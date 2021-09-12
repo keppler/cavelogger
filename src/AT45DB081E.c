@@ -45,7 +45,7 @@ static void _FLASH_transfer(uint8_t wlen, const uint8_t *wdata, uint16_t rlen, u
 
 }
 
-static uint16_t _FLASH_readStatus() {
+static uint16_t _FLASH_readStatus(void) {
 	uint16_t status;
 
 	/* read status register */
@@ -60,7 +60,7 @@ void FLASH_setup(void) {
 	_FLASH_NSS_PORT |= (1 << _FLASH_NSS_PORTPIN);	/* set NSS HIGH */
 }
 
-uint8_t FLASH_init() {
+uint8_t FLASH_init(void) {
 	uint8_t data[3];
 
 	/* read manufacturer and device id */

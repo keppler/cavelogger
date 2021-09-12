@@ -16,8 +16,8 @@
 #define ENABLE_RFM95
 #define ENABLE_BMP280
 
-#define CL_VERSION "1.5"
-#define CL_DATE "06/2021"
+#define CL_VERSION "1.7"
+#define CL_DATE "09/2021"
 
 extern uint16_t int0Count;
 extern volatile uint8_t inputButton;

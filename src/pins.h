@@ -3,7 +3,7 @@
 #ifndef __PINS_H
 #define __PINS_H
 
-#define F_CPU 1000000L
+//#define F_CPU 1000000L
 
 #define __CONCAT2(x,y) x ## y
 #define __CONCAT3(x,y,z) x ## y ## z

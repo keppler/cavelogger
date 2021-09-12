@@ -292,7 +292,7 @@ void RTC_set(const struct RTC_ts *ts) {
 
 }
 
-uint8_t RTC_powerLoss() {
+uint8_t RTC_powerLoss(void) {
 	uint8_t u;
 	/* check if VLF bit is set */
 	u = _RX6110_read(RX6110_REG_FLAG);
