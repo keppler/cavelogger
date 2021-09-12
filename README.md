@@ -129,3 +129,4 @@ All required libraries are included. The following adjustments have been made to
 * [Das Klima der Schrattenhöhle](https://www.research-collection.ethz.ch/bitstream/handle/20.500.11850/147894/eth-26985-01.pdf?sequence=1&isAllowed=y) - äußerst interessante wissenschaftliche Arbeit zur Klimamessung in Höhlen
 * [Hitzedraht-Anemometer](https://www.mikrocontroller.net/attachment/58437/ELV_Hitzdraht-Anemometer_3.._2_.pdf) (mit Schaltplan)
 * [Umbau Windrad von Reed auf Hallsensoren](https://www.arduinoforum.de/arduino-Thread-Anemometer-WH1080)
+* [The Art of Designing Remote IoT Devices - Technologies and Strategies for a Long Battery Life](https://www.researchgate.net/publication/348893315_The_Art_of_Designing_Remote_IoT_Devices-Technologies_and_Strategies_for_a_Long_Battery_Life)
