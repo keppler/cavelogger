@@ -208,7 +208,7 @@ UPDATE_MENU:
 					default: cfgLoraSF = DR_SF7;
 				}
 				/* Set data rate and transmit power for uplink */
-				LMIC_setDrTxpow(cfgLoraSF, 14);
+				LMIC_setDrTxpow(cfgLoraSF, 20);
 				goto UPDATE_MENU;
 			}
 #endif /* ENABLE_RFM95 */
